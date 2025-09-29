@@ -1,108 +1,173 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Intel Sustainability Summit Check-In</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Intel Sustainability Summit Check-In</title>
 
-    <!-- Font Awesome for icons -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <!-- HERO -->
-    <header class="hero">
-      <div class="hero-content">
-        <img src="img/intel-logo.png" alt="Intel Logo" class="intel-logo" />
-        <h1>Team Sustainability Summit</h1>
-        <div class="hero-divider"></div>
-        <p>
-          <i class="fas fa-leaf"></i>
-          Check-in system for sustainability event attendees
-        </p>
-      </div>
-    </header>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- ATTENDANCE TRACKER -->
-    <section class="attendance-tracker">
-      <div class="attendance-header">
-        <i class="fas fa-users"></i>
-        Attendance: <span id="attendeeCount">0</span>/50
+  <!-- Font Awesome for social icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="./style.css?v=4" />
+</head>
+<body>
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="brand">
+  <img src="img/intel-logo.png" alt="Intel logo" class="intel-logo">
+  <span class="brand-text">Sustainability Summit</span>
+</div>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#about" class="nav-link">About</a>
+      <a href="#contact" class="nav-link">Contact</a>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <img src="img/intel-logo.png" alt="Intel logo" class="intel-logo hero-logo">
+    <h1 class="hero-title">Team Sustainability Summit</h1>
+    <p class="hero-subtitle">Check-in system for sustainability event attendees</p>
+  </section>
+
+  <!-- Dashboard -->
+  <main class="dashboard" id="dashboard">
+    <!-- Left: Checked-in list -->
+    <section class="card" aria-labelledby="checkedInHeading">
+      <div class="card-header">
+        <h2 id="checkedInHeading" class="card-title">Checked-in Attendees</h2>
+        <button id="clearDataBtn" class="btn btn-ghost" type="button" aria-label="Clear all data">
+          🗑️ <span>Clear Data</span>
+        </button>
       </div>
-      <div class="progress-container">
-        <div id="progressBar" class="progress-bar"></div>
+      <div class="card-body">
+        <ul id="attendeeList" class="attendee-list" aria-live="polite"></ul>
       </div>
     </section>
 
-    <!-- CHECK-IN FORM -->
-    <main class="container">
-      <p id="greeting"></p>
-      <form class="check-in" id="checkInForm">
-        <label for="attendeeName" class="form-label">Attendee Check-In</label>
-        <div class="form-group">
-          <div class="input-wrapper">
-            <input
-              type="text"
-              id="attendeeName"
-              placeholder="Enter name..."
-              required
-            />
-            <select id="teamSelect" required>
-              <option value="" disabled selected>Select Team...</option>
-              <option value="water">🌊 Team Water Wise</option>
-              <option value="zero">🌿 Team Net Zero</option>
-              <option value="power">⚡ Team Renewables</option>
-            </select>
-          </div>
-          <button type="submit" id="checkInBtn">
-            <i class="fas fa-user-check"></i> Check In
-          </button>
+    <!-- Center: Check-in form -->
+<section class="card" id="greetingCardFix" aria-labelledby="checkinHeading">
+  <div class="card-header">
+    <h2 id="checkinHeading" class="card-title">Attendee Check-In</h2>
+  </div>
+  <div class="card-body">
+    <label for="nameInput" class="sr-only">Attendee name</label>
+    <input id="nameInput" class="input" type="text" placeholder="Enter name..." autocomplete="off" />
+
+    <label for="teamSelect" class="sr-only">Select team</label>
+    <select id="teamSelect" class="select" aria-label="Select team">
+      <option value="" disabled selected>Select Team...</option>
+      <option value="Team Water Wise">Team Water Wise</option>
+      <option value="Team Net Zero">Team Net Zero</option>
+      <option value="Team Renewables">Team Renewables</option>
+    </select>
+
+    <button id="checkInBtn" class="btn btn-primary" type="button">
+      👥 Check In
+    </button>
+
+    <!-- Greeting message stays inside ONLY this card -->
+    <div id="greetingMessage" class="greeting greeting-hidden" aria-live="polite"></div>
+  </div>
+</section>
+
+
+    <!-- Center: Attendance progress -->
+    <section class="card small" aria-labelledby="attendanceHeading">
+      <div class="card-header">
+        <h2 id="attendanceHeading" class="card-title">Attendance</h2>
+        <div id="attendanceCount" class="count">0 / 50</div>
+      </div>
+      <div class="card-body">
+        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="50" aria-valuenow="0">
+          <div id="progressFill" class="progress-fill" style="width:0%"></div>
         </div>
-      </form>
-    </main>
-    <!-- Attendee List -->
-    <section class="attendee-list">
-      <h3>Checked-in Attendees</h3>
-      <ul id="attendeeList"></ul>
+      </div>
     </section>
-        <!-- Clear Data -->
-    <div class="clear-data">
-      <button id="clearBtn" type="button">
-        <i class="fas fa-trash"></i> Clear Data
-      </button>
+
+    <!-- Right: Team attendance -->
+<!-- Right: Team attendance -->
+<div class="team-cards-container">
+  <section class="card team-card" id="team-water-card" aria-labelledby="teamWaterHeading">
+    <div class="team-overlay">
+      <h2 id="teamWaterHeading" class="team-title">🌊 Team Water Wise</h2>
+      <span class="team-count" id="count-water">0</span>
     </div>
-    <!-- TEAM STATS -->
-    <section class="team-stats">
-      <h3>Team Attendance</h3>
-      <div class="teams-grid">
-        <div class="team-card water">
-          <span class="team-name">🌊 Team Water Wise</span>
-          <span class="team-count" id="waterCount">0</span>
-        </div>
-        <div class="team-card zero">
-          <span class="team-name">🌿 Team Net Zero</span>
-          <span class="team-count" id="zeroCount">0</span>
-        </div>
-        <div class="team-card power">
-          <span class="team-name">⚡ Team Renewables</span>
-          <span class="team-count" id="powerCount">0</span>
-        </div>
-      </div>
-    </section>
+  </section>
 
-    <!-- FOOTER -->
-    <footer class="footer">
-      &copy; 2025 Intel •
-      <a
-        href="https://www.intel.com/content/www/us/en/corporate-responsibility/2030-goals.html"
-        class="footer-link"
-        >Sustainability Goals</a
-      >
-    </footer>
+  <section class="card team-card" id="team-netzero-card" aria-labelledby="teamNetzeroHeading">
+    <div class="team-overlay">
+      <h2 id="teamNetzeroHeading" class="team-title">🌿 Team Net Zero</h2>
+      <span class="team-count" id="count-netzero">0</span>
+    </div>
+  </section>
 
-    <script src="script.js"></script>
-  </body>
+  <section class="card team-card" id="team-renew-card" aria-labelledby="teamRenewHeading">
+    <div class="team-overlay">
+      <h2 id="teamRenewHeading" class="team-title">⚡ Team Renewables</h2>
+      <span class="team-count" id="count-renew">0</span>
+    </div>
+  </section>
+</div>
+  </main>
+
+  <!-- Footer -->
+<footer class="footer">
+  <p>© 2025 Intel • <a href="https://www.intel.com/content/www/us/en/corporate-responsibility/sustainability.html" 
+   class="footer-link" target="_blank" rel="noopener">Sustainability Goals</a></p>
+
+  <div class="social-links">
+    <a href="https://instagram.com" target="_blank" aria-label="Instagram">
+      <i class="fab fa-instagram"></i>
+    </a>
+    <a href="https://facebook.com" target="_blank" aria-label="Facebook">
+      <i class="fab fa-facebook"></i>
+    </a>
+    <a href="https://twitter.com" target="_blank" aria-label="Twitter / X">
+      <i class="fab fa-twitter"></i>
+    </a>
+  </div>
+</footer>
+
+  <!-- Celebrations -->
+  <div id="megaCelebration" class="mega hidden" aria-hidden="true">🎊 50 CHECK-INS! 🎊</div>
+
+  <!-- Confetti library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- About Modal -->
+<div id="aboutModal" class="modal hidden" role="dialog" aria-labelledby="aboutTitle" aria-hidden="true">
+  <div class="modal-content">
+    <span id="closeModal" class="modal-close" role="button" aria-label="Close modal">&times;</span>
+    <h2 id="aboutTitle">About the Summit Project</h2>
+    <p>
+      The Intel Sustainability Summit Check-In project is designed to track attendees, 
+      encourage team participation, and celebrate milestones with interactive features 
+      like progress bars, confetti celebrations, and dynamic team cards. 
+      It combines modern design with accessibility and smooth animations.
+    </p>
+  </div>
+</div>
+<!-- Contact Modal -->
+<div id="contactModal" class="modal hidden" role="dialog" aria-labelledby="contactTitle" aria-hidden="true">
+  <div class="modal-content">
+    <span id="closeContact" class="modal-close" role="button" aria-label="Close modal">&times;</span>
+    <h2 id="contactTitle">Contact</h2>
+    <p>
+      📧 Email: <a href="mailto:aryansital2005@gmail.com">aryansital2005@gmail.com</a><br>
+      💼 GitHub: <a href="https://github.com/AryanSital" target="_blank">github.com/AryanSital</a><br>
+      🌍 LinkedIn: <a href="https://linkedin.com/in/aryansital" target="_blank">linkedin.com/in/aryansital</a>
+    </p>
+  </div>
+</div>
+
+  <!-- Logic -->
+  <script src="./script.js?v=4"></script>
+</body>
 </html>

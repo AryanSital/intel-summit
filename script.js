@@ -1,216 +1,258 @@
-// DOM Elements
-const form = document.getElementById("checkInForm");
-const attendeeCountEl = document.getElementById("attendeeCount");
-const progressBar = document.getElementById("progressBar");
-const greeting = document.getElementById("greeting");
+const capacity = 50;
+const TEAM_KEYS = ["Team Water Wise", "Team Net Zero", "Team Renewables"];
 
-const waterCountEl = document.getElementById("waterCount");
-const zeroCountEl = document.getElementById("zeroCount");
-const powerCountEl = document.getElementById("powerCount");
+let attendees = [];
+let teamCounts = {
+  "Team Water Wise": 0,
+  "Team Net Zero": 0,
+  "Team Renewables": 0
+};
+
+const nameInput = document.getElementById("nameInput");
+const teamSelect = document.getElementById("teamSelect");
+const checkInBtn = document.getElementById("checkInBtn");
+const clearDataBtn = document.getElementById("clearDataBtn");
 
 const attendeeListEl = document.getElementById("attendeeList");
-const clearBtn = document.getElementById("clearBtn");
+const attendanceCountEl = document.getElementById("attendanceCount");
+const progressFillEl = document.getElementById("progressFill");
 
-let totalAttendees = 0;
-const maxAttendees = 50;
-let teamCounts = { water: 0, zero: 0, power: 0 };
+const countWater = document.getElementById("count-water");
+const countNetzero = document.getElementById("count-netzero");
+const countRenew = document.getElementById("count-renew");
+const teamList = document.getElementById("teamList");
 
-// Animate Number
-function animateNumber(el, start, end, duration = 600) {
-  let startTime = null;
-  function step(timestamp) {
-    if (!startTime) startTime = timestamp;
-    const progress = Math.min((timestamp - startTime) / duration, 1);
-    el.textContent = Math.floor(progress * (end - start) + start);
-    if (progress < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
+const mega = document.getElementById("megaCelebration");
+
+const STORAGE_KEY = "intel_summit_checkins_v4";
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ attendees, teamCounts }));
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (Array.isArray(data.attendees)) attendees = data.attendees;
+    if (data.teamCounts) teamCounts = data.teamCounts;
+  } catch {}
 }
 
-// Animate Progress Bar
-function animateProgressBar(el, newWidth) {
-  el.style.transition = "width 0.8s cubic-bezier(0.4, 0, 0.2, 1)";
-  el.style.width = newWidth + "%";
-}
-
-// Fade In Greeting
-function fadeIn(el, text, className) {
-  el.textContent = text;
-  el.className = className;
-  el.style.opacity = 0;
-  el.style.display = "block";
-
-  let opacity = 0;
-  const timer = setInterval(() => {
-    opacity += 0.05;
-    el.style.opacity = opacity;
-    if (opacity >= 1) clearInterval(timer);
-  }, 30);
-}
-
-// Confetti Burst
-function confettiBurst(count = 100) {
-  const colors = [
-    "#00c7fd", "#0071c5", "#38bdf8", "#34d399",
-    "#facc15", "#f97316", "#ec4899", "#8b5cf6", "#ffffff"
-  ];
-
-  for (let i = 0; i < count; i++) {
-    const confetti = document.createElement("span");
-    confetti.classList.add("confetti-piece");
-
-    confetti.style.left = Math.random() * 100 + "vw";
-    confetti.style.width = Math.random() * 8 + 6 + "px";
-    confetti.style.height = Math.random() * 14 + 8 + "px";
-
-    confetti.style.backgroundColor =
-      colors[Math.floor(Math.random() * colors.length)];
-
-    const duration = 2 + Math.random() * 3;
-    const drift = Math.random() < 0.5 ? -1 : 1;
-    confetti.style.setProperty("--driftX", drift * (Math.random() * 60) + "px");
-    confetti.style.animationDuration = duration + "s";
-
-    document.body.appendChild(confetti);
-
-    setTimeout(() => confetti.remove(), duration * 1000);
-  }
-}
-
-// Big Celebration (when full)
-function bigCelebration() {
-  const overlay = document.createElement("div");
-  overlay.classList.add("big-celebration");
-  overlay.innerHTML = `<h2>🎉 Event Full! 50 Attendees 🎉</h2>`;
-  document.body.appendChild(overlay);
-
-  confettiBurst(300);
-
-  setTimeout(() => overlay.remove(), 6000);
-}
-
-// Helper: Team Label
-function teamLabel(team) {
-  switch (team) {
-    case "water":
-      return "🌊 Team Water Wise";
-    case "zero":
-      return "🌿 Team Net Zero";
-    case "power":
-      return "⚡ Team Renewables";
-    default:
-      return "";
-  }
-}
-
-// Add to visible attendee list with fade-in
-function addToAttendeeList(name, team) {
-  const li = document.createElement("li");
-  li.textContent = `✅ ${name} – ${teamLabel(team)}`;
-  li.classList.add("attendee-item");
-  attendeeListEl.appendChild(li);
-
-  requestAnimationFrame(() => {
-    li.classList.add("show");
+function renderAttendees() {
+  attendeeListEl.innerHTML = "";
+  attendees.forEach(({ name, team }) => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span>${escapeHTML(name)}</span>
+      <span class="attendee-team">${escapeHTML(team)}</span>
+    `;
+    attendeeListEl.appendChild(li);
   });
 }
+function renderCounts() {
+  countWater.textContent = teamCounts["Team Water Wise"];
+  countNetzero.textContent = teamCounts["Team Net Zero"];
+  countRenew.textContent = teamCounts["Team Renewables"];
 
-// Save data to localStorage
-function saveData(name, team) {
-  const saved = JSON.parse(localStorage.getItem("attendanceData")) || {
-    totalAttendees: 0,
-    teamCounts: { water: 0, zero: 0, power: 0 },
-    attendees: []
-  };
-
-  saved.totalAttendees = totalAttendees;
-  saved.teamCounts = teamCounts;
-  saved.attendees.push({ name, team });
-
-  localStorage.setItem("attendanceData", JSON.stringify(saved));
+  const total = attendees.length;
+  const clamped = Math.min(total, capacity);
+  attendanceCountEl.textContent = `${clamped} / ${capacity}`;
+  progressFillEl.style.width = `${(clamped / capacity) * 100}%`;
+  progressFillEl.parentElement.setAttribute("aria-valuenow", clamped);
 }
 
-// Load saved data from localStorage
-function loadData() {
-  const saved = JSON.parse(localStorage.getItem("attendanceData"));
-  if (!saved) return;
+// highlight winner ONLY when called explicitly
+// highlight winner on team cards
+function highlightWinner() {
+  // Build sorted list of team counts
+  const counts = TEAM_KEYS.map(t => ({ team: t, count: teamCounts[t] }))
+    .sort((a, b) => b.count - a.count);
 
-  totalAttendees = saved.totalAttendees || 0;
-  teamCounts = saved.teamCounts || { water: 0, zero: 0, power: 0 };
+  const top = counts[0];
+  const isTie = counts[1] && top.count === counts[1].count;
+  const hasAny = top.count > 0;
 
-  attendeeCountEl.textContent = totalAttendees;
-  waterCountEl.textContent = teamCounts.water;
-  zeroCountEl.textContent = teamCounts.zero;
-  powerCountEl.textContent = teamCounts.power;
+  // Map team names to card IDs
+  const teamCardMap = {
+    "Team Water Wise": document.getElementById("team-water-card"),
+    "Team Net Zero": document.getElementById("team-netzero-card"),
+    "Team Renewables": document.getElementById("team-renew-card")
+  };
 
-  const percent = (totalAttendees / maxAttendees) * 100;
-  progressBar.style.width = percent + "%";
+  // Reset styles
+  Object.values(teamCardMap).forEach(card => {
+    card.classList.remove("winner");
+    card.style.boxShadow = "none";
+  });
 
-  attendeeListEl.innerHTML = "";
-  if (saved.attendees) {
-    saved.attendees.forEach(({ name, team }) => addToAttendeeList(name, team));
+  // Apply winner style
+if (hasAny && !isTie) {
+  const winnerCard = teamCardMap[top.team];
+  if (winnerCard) {
+    winnerCard.classList.add("winner");
+    winnerCard.style.boxShadow =
+      "0 0 0 3px rgba(255, 223, 88, 0.7), 0 12px 32px rgba(0,0,0,0.45)";
+
+    // Add "Winner" badge if not already present
+    if (!winnerCard.querySelector(".winner-badge")) {
+      const badge = document.createElement("div");
+      badge.className = "winner-badge";
+      badge.textContent = "🏆 Winning Team 🏆";
+      winnerCard.appendChild(badge);
+    }
   }
 }
 
-// Form Submit Event
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
+}
 
-  const name = document.getElementById("attendeeName").value.trim();
-  const team = document.getElementById("teamSelect").value;
 
-  if (!name || !team) return;
+function renderAll(){ renderAttendees(); renderCounts(); /* no winner here */ }
 
-  if (totalAttendees >= maxAttendees) {
-    fadeIn(greeting, "Sorry, event is full!", "error-message");
+checkInBtn.addEventListener("click", () => {
+  const name = nameInput.value.trim();
+  const team = teamSelect.value;
+
+  if (!name) { alert("Please enter a name."); nameInput.focus(); return; }
+  if (!TEAM_KEYS.includes(team)) { alert("Please select a team."); teamSelect.focus(); return; }
+
+  // 🚨 Capacity check but allow #50 celebration
+if (attendees.length >= capacity) {
+  if (attendees.length === capacity) {
+    celebrate(attendees.length); // still trigger mega confetti
+  }
+  alert("Check-in limit reached (50 attendees). No more entries allowed.");
+  return;
+}
+
+
+  attendees.push({ name, team });
+  teamCounts[team]++;
+
+  nameInput.value = "";
+  teamSelect.value = "";
+
+  save();
+  renderAll();
+  celebrate(attendees.length);
+
+  // 👇 Show personalized greeting here
+  showGreeting(name, team);
+});
+
+clearDataBtn.addEventListener("click", () => {
+  if (!confirm("Clear all check-in data?")) return;
+  attendees = [];
+  teamCounts = { "Team Water Wise": 0, "Team Net Zero": 0, "Team Renewables": 0 };
+  save();
+  renderAll();
+});
+
+function celebrate(total) {
+  if (typeof confetti !== "function") {
+    console.error("Confetti library not loaded");
     return;
   }
 
-  totalAttendees++;
-  teamCounts[team]++;
+  if (total === capacity) {
+    // Show winner now
+    highlightWinner();
 
-  animateNumber(attendeeCountEl, parseInt(attendeeCountEl.textContent), totalAttendees);
-  animateNumber(waterCountEl, parseInt(waterCountEl.textContent), teamCounts.water);
-  animateNumber(zeroCountEl, parseInt(zeroCountEl.textContent), teamCounts.zero);
-  animateNumber(powerCountEl, parseInt(powerCountEl.textContent), teamCounts.power);
+    // Mega celebration text
+    mega.classList.remove("hidden");
+    mega.classList.add("pulse"); 
+    setTimeout(() => {
+      mega.classList.add("hidden");
+      mega.classList.remove("pulse");
+    }, 5000); // 5s visible
 
-  const percent = (totalAttendees / maxAttendees) * 100;
-  animateProgressBar(progressBar, percent);
+    // Big confetti shower for 5 seconds
+    const duration = 5000;
+    const end = Date.now() + duration;
 
-  fadeIn(greeting, `Welcome, ${name}! You’ve joined ${teamLabel(team)}.`, "success-message");
-
-  // ✅ Save & display attendee
-  saveData(name, team);
-  addToAttendeeList(name, team);
-
-  if (totalAttendees < maxAttendees) {
-    confettiBurst(100);
+    (function frame() {
+      confetti({
+        particleCount: 10,
+        spread: 200,
+        startVelocity: 40,
+        ticks: 200,
+        origin: { x: Math.random(), y: Math.random() - 0.2 }
+      });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    })();
   } else {
-    bigCelebration();
+    // Small confetti burst for every check-in
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      startVelocity: 30,
+      origin: { y: 0.6 }
+    });
   }
+}
 
-  form.reset();
-});
+function escapeHTML(str){
+  return str.replace(/[&<>"']/g, m => (
+    {"&":"&amp;","<":"&lt;"," >":"&gt;",'"':"&quot;","'":"&#39;"}[m]
+  ));
+}
 
-// Clear Data Button
-clearBtn.addEventListener("click", () => {
-  localStorage.removeItem("attendanceData");
+document.addEventListener("DOMContentLoaded", () => { load(); renderAll(); });
 
-  totalAttendees = 0;
-  teamCounts = { water: 0, zero: 0, power: 0 };
+// 👇 Add this helper function at the bottom of script.js
+function showGreeting(name, team) {
+  const greetingEl = document.getElementById("greetingMessage");
+  greetingEl.textContent = `Thanks for checking in, ${name} (${team}). We hope you have a great experience at the Intel Summit.`;
 
-  attendeeCountEl.textContent = 0;
-  waterCountEl.textContent = 0;
-  zeroCountEl.textContent = 0;
-  powerCountEl.textContent = 0;
+  // Show with animation
+  greetingEl.classList.add("show");
 
-  progressBar.style.width = "0%";
-  greeting.style.display = "none";
-  attendeeListEl.innerHTML = "";
+  setTimeout(() => {
+    greetingEl.classList.remove("show");  // hide smoothly
+  }, 4000);
+}
 
-  fadeIn(greeting, "✅ All data cleared.", "success-message");
-});
 
-// Load data when page loads
-window.addEventListener("DOMContentLoaded", loadData);
+// About modal
+const aboutLink = document.querySelector('.nav-link[href="#about"]');
+const aboutModal = document.getElementById('aboutModal');
+const closeModal = document.getElementById('closeModal');
+
+if (aboutLink && aboutModal && closeModal) {
+  aboutLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    aboutModal.classList.add('show');
+  });
+
+  closeModal.addEventListener('click', () => {
+    aboutModal.classList.remove('show');
+  });
+
+  window.addEventListener('click', (e) => {
+    if (e.target === aboutModal) {
+      aboutModal.classList.remove('show');
+    }
+  });
+}
+// Contact modal
+const contactLink = document.querySelector('.nav-link[href="#contact"]');
+const contactModal = document.getElementById('contactModal');
+const closeContact = document.getElementById('closeContact');
+
+if (contactLink && contactModal && closeContact) {
+  contactLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    contactModal.classList.add('show');
+  });
+
+  closeContact.addEventListener('click', () => {
+    contactModal.classList.remove('show');
+  });
+
+  window.addEventListener('click', (e) => {
+    if (e.target === contactModal) {
+      contactModal.classList.remove('show');
+    }
+  });
+}
 
